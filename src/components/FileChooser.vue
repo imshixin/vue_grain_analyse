@@ -1,57 +1,66 @@
 <template>
   <div class="root">
-    <el-upload class="upload" v-if="hasSelectFile" drag :on-change="onChooseFile" :auto-upload="false">
-      <p style="color:blue;">Drop file here or click to upload</p>
-      <template #tip>
-        <p>选择一个excel文件</p>
-      </template>
-    </el-upload>
     <div class="tableContainer">
-      <el-form label-width="150px">
-        <el-form-item label="选择文件">
-          <el-upload :on-change="onChooseFile" :auto-upload="false">
-            <el-button>选择文件</el-button>
+
+      <el-form label-width="140px">
+        <!-- <el-form-item label="选择文件"> -->
+        <el-col :span="24">
+          <el-upload :on-change="onChooseFile" :auto-upload="false" drag="true" style="height: 40px;">选择文件
+            <!-- <el-button>选择文件</el-button> -->
           </el-upload>
-        </el-form-item>
+        </el-col>
+        <!-- </el-form-item> -->
+        <el-divider border-style="dashed" />
         <el-form-item label="选择一个工作表">
-          <el-select placeholder="请选择" v-model="formValues.selectWorksheet">
+          <el-select :disabled="!hasSelectFile" placeholder="请选择" v-model="formValues.selectWorksheet">
             <el-option v-for="option in onSelectOptions" :key="option.value" :label="option.label"
               :value="option.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="粒径大小单元格范围">
           <el-col :span="11">
-            <el-input v-model="formValues.sizeStartCell" />
+            <el-input :disabled="!hasSelectFile" v-model="formValues.sizeStartCell" />
           </el-col>
           <el-col :span="2">
             <div class="text-gray-500" style="text-align: center;">-</div>
           </el-col>
           <el-col :span="11">
-            <el-input v-model="formValues.sizeEndCell" />
+            <el-input :disabled="!hasSelectFile" v-model="formValues.sizeEndCell" />
           </el-col>
         </el-form-item>
         <el-form-item label="分组名单元格范围">
           <el-col :span="11">
-            <el-input v-model="formValues.groupStartCell" />
+            <el-input :disabled="!hasSelectFile" v-model="formValues.groupStartCell" />
           </el-col>
           <el-col :span="2">
             <div class="text-gray-500" style="text-align: center;">-</div>
           </el-col>
           <el-col :span="11">
-            <el-input v-model="formValues.groupEndCell" />
+            <el-input :disabled="!hasSelectFile" v-model="formValues.groupEndCell" />
           </el-col>
         </el-form-item>
         <el-form-item label="数据单元格范围">
           <el-col :span="11">
-            <el-input v-model="formValues.dataStartCell" />
+            <el-input :disabled="!hasSelectFile" v-model="formValues.dataStartCell" />
           </el-col>
           <el-col :span="2">
             <div class="text-gray-500" style="text-align: center;">-</div>
           </el-col>
           <el-col :span="11">
-            <el-input v-model="formValues.dataEndCell" />
+            <el-input :disabled="!hasSelectFile" v-model="formValues.dataEndCell" />
           </el-col>
         </el-form-item>
+        <el-divider border-style="dotted" content-position="center">
+          ↓ 额外数据图表 ↓
+        </el-divider>
+        <!-- <el-form-item label="额外数据图表"> -->
+        <el-table :data="categoryDetails" max-height="250" border>
+          <el-table-column label="名称" prop="name" />
+          <el-table-column label="特征粒径含量" prop="rangeOrPercent" #default="scope">
+            <my-table-cell :scope="scope"/>
+          </el-table-column>
+        </el-table>
+        <!-- </el-form-item> -->
         <el-form-item>
           <el-button type="primary" @click="onSubmit">确认</el-button>
         </el-form-item>
@@ -61,13 +70,13 @@
 </template>
 
 <script lang="ts" setup>
+import MyTableCell from './MyTableCell.vue'
 import { reactive, ref, watch, computed, } from 'vue';
-import { ElUpload, ElButton, ElTable, ElTableColumn, ElSelect, ElOption, ElForm, ElFormItem, ElInput, ElCol } from 'element-plus';
+import { ElUpload, ElButton, ElTable, ElTableColumn, ElSelect, ElOption, ElForm, ElFormItem, ElInput, ElCol, ElDivider } from 'element-plus';
 import { UploadFile, UploadFiles } from 'element-plus';
 import * as exceljs from "exceljs"
-import { isNumber, isString, toNumber, toString } from 'lodash';
-import type { DataSheet } from '../scripts/tools'
-
+import { isArray, isNumber, isString, toNumber, toString } from 'lodash';
+import type { CategoryDetail, DataSheet } from '../scripts/tools'
 interface CellIndex {
   row: number,
   column: number
@@ -75,10 +84,19 @@ interface CellIndex {
 const worksheets = ref<Array<exceljs.Worksheet>>([])
 const hasSelectFile = ref<boolean>(false)
 const columnCount = ref<number>(0);
-const selectDefaultValue = ref("")
 const rows = ref<Array<Array<string>>>([])
+const categoryNames = ['clay', 'fine silt', 'medium silt', 'coarse silt', 'fine sand', 'coarse sand', 'fine gravel', 'd50']
+const reqiureCategories = [[0, 2], [2, 6], [6, 20], [20, 63], [63, 200], [200, 600], [600, 2000], 50] as ([number, number] | number)[]
+const categoryDetails = categoryNames.map((v, i) => ({ name: v, rangeOrPercent: reqiureCategories[i] } as CategoryDetail))
+const extraData = reactive<{
+  sizeRange: CategoryDetail[],
+  featureValue: CategoryDetail[]
+}>({
+  sizeRange: categoryDetails.filter(v => isArray(v)),
+  featureValue: categoryDetails.filter(v => !isArray(v))
+})
 const formValues = reactive({
-  selectWorksheet: "Sheet7",
+  selectWorksheet: -1,
   selectFileName: '',
   sizeStartCell: "A2",
   sizeEndCell: "A100",
@@ -87,10 +105,12 @@ const formValues = reactive({
   dataStartCell: "B2",
   dataEndCell: "H100",
 })
+
+
+
 watch(worksheets, async () => {
   //设置默认表格
   // console.log(getCellValues(worksheets.value[0], "A1", "H100"));
-
   rows.value = getTableData(worksheets.value[0])
 })
 const onSelectOptions = computed(() => {
@@ -98,26 +118,28 @@ const onSelectOptions = computed(() => {
     return { label: v.name, "value": v.id }
   })
   if (worksheets.value.length > 0)
-    selectDefaultValue.value = arr[0].label
+    formValues.selectWorksheet = arr[0].value
   return arr
 })
 
 const emit = defineEmits(['importNewData'])
 //点击确认按钮
 const onSubmit = () => {
-  const groupNames = getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0], formValues.groupStartCell, formValues.groupEndCell) as string[]
-  const sizes = (getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0]
-    , formValues.sizeStartCell, formValues.sizeEndCell) as string[]).map(v => Number(v))
-  const datas = (getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0]
-    , formValues.dataStartCell, formValues.dataEndCell) as string[][]).map(v => {
-      return v.map(va => Number(va))
-    })
+  let worksheet = worksheets.value.filter(v => v.id  == formValues.selectWorksheet)[0]
+  const groupNames = getCellValues(worksheet, formValues.groupStartCell, formValues.groupEndCell) as string[]
+  const sizes = (getCellValues(worksheet, formValues.sizeStartCell, formValues.sizeEndCell) as string[]).map(v => Number(v))
+  const datas = (getCellValues(worksheet, formValues.dataStartCell, formValues.dataEndCell) as string[][]).map(v => {
+    return v.map(va => Number(va))
+  })
   emit('importNewData', {
     fileName: formValues.selectFileName,
     groupNames,
     sizes,
     datas
   } as DataSheet)
+  worksheets.value=[]
+  formValues.selectWorksheet=-1
+  hasSelectFile.value=false
 }
 //根据指定单元格获取数据
 const getCellValues = (worksheet: exceljs.Worksheet, start: string, end: string) => {
@@ -166,7 +188,7 @@ const onChooseFile = (uploadFile: UploadFile, uploadFiles: UploadFiles) => {
     return workbook.xlsx.load(val)
   }).then((book) => {
     worksheets.value = book.worksheets
-    hasSelectFile.value = false
+    hasSelectFile.value = true
   })
 }
 
@@ -214,9 +236,17 @@ const getTableData = (worksheet: exceljs.Worksheet) => {
   height: 100%;
 }
 
+
+
 .upload {
   background-color: blueviolet;
   width: 100%;
   height: 100%;
+}
+
+::v-deep(.el-upload-dragger) {
+  padding: 0;
+  height: 50px;
+  line-height: 50px;
 }
 </style>

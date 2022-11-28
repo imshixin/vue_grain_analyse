@@ -7,18 +7,31 @@
 <script lang="ts" setup>
 import * as echarts from 'echarts'
 import { isNil } from 'lodash';
-import { ref, onMounted,watch, nextTick, inject, Ref } from 'vue';
-import type {GroupData} from '../scripts/tools'
+import { ref, onMounted, watch, nextTick, inject, Ref } from 'vue';
+import type { GroupData } from '../scripts/tools'
 const prop = defineProps<{
-  groups:GroupData[],
-  sizes:number[],
-  activePaneName:string,
-  index:number
+  groups: GroupData[],
+  sizes: number[],
+  activePaneName: string,
+  index: number
 }>()
-const chartName = "dist-chart"+prop.index
-const distChart = ref<HTMLElement|null>(null)
+const chartName = "dist-chart" + prop.index
+const distChart = ref()
 const showSymbol = ref(true)
 const currentTab = inject('currentTab') as Ref<string>
+
+const resizeGraph = (myChart: echarts.ECharts) => {
+  if (!isNil(distChart.value) && prop.activePaneName == 'distribution' && currentTab.value == prop.index.toString()) {
+    // console.log('dist-chart::width:',distChart.value.clientWidth);
+    // console.log('dist-chart::height:',distChart.value.clientHeight);
+    nextTick(() => {
+      myChart.resize({
+        width: distChart.value.clientWidth,
+        height: distChart.value.clientHeight
+      })
+    })
+  }
+}
 onMounted(() => {
   const myChart = echarts.init(document.getElementById(chartName) as HTMLElement)
   myChart.setOption({
@@ -43,7 +56,7 @@ onMounted(() => {
         type: 'inverse',
         title: 'inverse'
       }],
-      width:'',
+      width: '',
       right: '5%',
       top: '1%',
       borderWidth: 1,
@@ -51,10 +64,10 @@ onMounted(() => {
       borderColor: '#000',
     }],
     grid: [{
-      left:'5%',
-      right:'5%',
-      top:'10%',
-      bottom:'11%'
+      left: '5%',
+      right: '5%',
+      top: '10%',
+      bottom: '11%'
     },],
     xAxis: [{
       type: 'category',
@@ -68,8 +81,8 @@ onMounted(() => {
     dataZoom: [{
       type: 'slider',
       xAxisIndex: [0],
-      bottom:'2%'
-    },{
+      bottom: '2%'
+    }, {
       type: 'inside',
       xAxisIndex: [0],
     },],
@@ -83,7 +96,7 @@ onMounted(() => {
           focus: 'series',
         },
         smooth: true,
-        showSymbol:showSymbol.value,
+        showSymbol: showSymbol.value,
         tooltip: {
           // formatter: toolTipFormatter,
           // valueFormatter:(v:number)=>v+'%'
@@ -91,20 +104,18 @@ onMounted(() => {
       }
     }),],
   })
-  watch([() => prop.activePaneName,currentTab], () => {
-    if(prop.activePaneName=='distribution'&&currentTab.value==prop.index.toString()){
-      nextTick(()=>{
-        myChart.resize()
-      })
-    }
+  watch([() => prop.activePaneName, currentTab], () => {
+    resizeGraph(myChart)
   })
-  window.addEventListener('resize',()=>{myChart.resize()})
+  resizeGraph(myChart)
+
+  window.addEventListener('resize', () => { resizeGraph(myChart) })
 })
 
 </script>
 
 <style scoped>
-.dist-chart{
+.dist-chart {
   width: calc(100%);
   height: calc(100%);
 }

@@ -48,6 +48,7 @@ const clientDim = ref<Dimension>({
   width: 0,
   height: 0
 })
+//获取容器计算出来的高度
 const getGraphHeight = (chartDetail: ChartDetail[], chartDim: Dimension, gap: number, margin: number): number => {
   let maxY = 0
   chartDetail.forEach(v => {
@@ -90,10 +91,8 @@ const resizeGraph = debounce((myChart: echarts.ECharts) => {
       width: extraChart.value.clientWidth,
       height: getGraphHeight(chartDetail.value, chartConfig.chartDim, chartConfig.gap, chartConfig.margin.top)
     })
-  }else{
-    console.log('extraChart.value is null');
   }
-}, 10)
+}, 80)
 const getGraphOption = (chartDetail:ChartDetail[])=>{
   return {
     title: [...chartDetail.map(v => ({
@@ -146,11 +145,6 @@ const getGraphOption = (chartDetail:ChartDetail[])=>{
         show: true
       }
     }))],
-    dataZoom: [{
-      type: 'slider',
-      xAxisIndex: [0],
-      bottom: '2%'
-    },],
     series: [...chartDetail.map((v, index) => {
       return {
         name: v.name,

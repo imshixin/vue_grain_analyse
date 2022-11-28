@@ -4,9 +4,9 @@
             <el-menu-item index="0">粒径分析（grain size analyse）</el-menu-item>
             <div style="flex-grow: 1;"></div>
             <el-menu-item index="1" class="new-data-btn">
-                <el-button type="primary" size="large" plain><iconfont icon="#icon-tianjia" size="18"/><span>增加数据</span></el-button>
+                <el-button type="primary" size="large" ><iconfont icon="#icon-tianjia" size="18"/><span>增加数据</span></el-button>
             </el-menu-item>
-            <el-menu-item index="2"><iconfont icon="#icon-qiehuanyuyan" size="26"/> 选择语言</el-menu-item>
+            <el-menu-item index="2"><iconfont icon="#icon-qiehuanyuyan" size="23"/> 选择语言</el-menu-item>
             <el-dialog class="file-chooser-dialog" v-model="isShowDialog">
                 <file-chooser @import-new-data="onImportNewData"/>
             </el-dialog>
@@ -61,13 +61,19 @@ li.el-menu-item.is-active {
 }
 
 ::v-deep(.el-dialog){
-    --el-dialog-width: 410px;
+    min-width: 460px;
+    max-width: 680px;
+    /* --el-dialog-width: 410px; */
 }
 .main-tabs {
     height: calc(100vh - 57px);
 }
 .el-menu{
     align-items: center;
+}
+li.new-data-btn{
+    height: auto;
+    align-self: stretch;
 }
 .main-tabs::v-deep > .el-tabs__content {
     box-sizing: content-box;

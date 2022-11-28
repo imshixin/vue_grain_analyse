@@ -91,7 +91,7 @@ export const generateCategory = (groups:GroupData[],sizes:number[],name:string,r
     groupNames:[],
     values:[]
   } as Category
-  console.log('type',rangeOrPercent);
+  // console.log('type',rangeOrPercent);
 
   if(isArray(rangeOrPercent)){
     const [start,end] = [Math.min(...rangeOrPercent),Math.max(...rangeOrPercent)]
