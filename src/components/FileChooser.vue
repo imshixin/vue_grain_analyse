@@ -49,7 +49,7 @@
             <span class="text-gray-500">-</span>
           </el-col>
           <el-col :span="11">
-            <el-input  v-model="formValues.dataEndCell" />
+            <el-input v-model="formValues.dataEndCell" />
           </el-col>
         </el-form-item>
         <el-form-item>
@@ -61,18 +61,13 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, watch, computed, unref } from 'vue';
+import { reactive, ref, watch, computed, } from 'vue';
 import { ElUpload, ElButton, ElTable, ElTableColumn, ElSelect, ElOption, ElForm, ElFormItem, ElInput, ElCol } from 'element-plus';
 import { UploadFile, UploadFiles } from 'element-plus';
 import * as exceljs from "exceljs"
 import { isNumber, isString, toNumber, toString } from 'lodash';
+import type { DataSheet } from '../scripts/tools'
 
-interface MyWorkSheet {
-  name: string,
-  rowCount: number,
-  columnCount: number,
-  data: Array<Array<exceljs.Cell>>
-}
 interface CellIndex {
   row: number,
   column: number
@@ -84,6 +79,7 @@ const selectDefaultValue = ref("")
 const rows = ref<Array<Array<string>>>([])
 const formValues = reactive({
   selectWorksheet: "Sheet7",
+  selectFileName:'',
   sizeStartCell: "A2",
   sizeEndCell: "A100",
   groupStartCell: "B1",
@@ -93,7 +89,7 @@ const formValues = reactive({
 })
 watch(worksheets, async () => {
   //设置默认表格
-  console.log(getCellValues(worksheets.value[0],"A1","H100"));
+  // console.log(getCellValues(worksheets.value[0], "A1", "H100"));
 
   rows.value = getTableData(worksheets.value[0])
 })
@@ -106,41 +102,55 @@ const onSelectOptions = computed(() => {
   return arr
 })
 
+const emit = defineEmits(['importNewData'])
+//点击确认按钮
 const onSubmit = () => {
-
+  const groupNames = getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0], formValues.groupStartCell, formValues.groupEndCell) as string[]
+  const sizes = (getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0]
+    , formValues.sizeStartCell, formValues.sizeEndCell) as string[]).map(v=>Number(v))
+  const datas = (getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0]
+    , formValues.dataStartCell, formValues.dataEndCell) as string[][]).map(v => {
+      return v.map(va => Number(va))
+    })
+  emit('importNewData', {
+    fileName:formValues.selectFileName,
+    groupNames,
+    sizes,
+    datas
+  } as DataSheet)
 }
 //根据指定单元格获取数据
 const getCellValues = (worksheet: exceljs.Worksheet, start: string, end: string) => {
   const startCell = worksheet.getCell(start)
   const endCell = worksheet.getCell(end)
   const startCellIndex = {
-    row: Math.min(Number(startCell.row),Number(endCell.row)),
-    column: Math.min(Number(startCell.col),Number(endCell.col))
+    row: Math.min(Number(startCell.row), Number(endCell.row)),
+    column: Math.min(Number(startCell.col), Number(endCell.col))
   } as CellIndex
   const endCellIndex = {
-    row: Math.max(Number(startCell.row),Number(endCell.row)),
-    column: Math.max(Number(startCell.col),Number(endCell.col))
+    row: Math.max(Number(startCell.row), Number(endCell.row)),
+    column: Math.max(Number(startCell.col), Number(endCell.col))
   } as CellIndex
-  console.log(startCellIndex,endCellIndex);
+  // console.log(startCellIndex, endCellIndex);
 
-  if(startCellIndex.row==endCellIndex.row){
-    let data=[]
-    for(let i = startCellIndex.column;i<=endCellIndex.column;i++){
+  if (startCellIndex.row == endCellIndex.row) {
+    let data = []
+    for (let i = startCellIndex.column; i <= endCellIndex.column; i++) {
       data.push(handleCellVaue(worksheet.getRow(startCellIndex.row).getCell(i).value))
     }
     return data
-  }else if(startCellIndex.column==endCellIndex.column){
-    let data=[]
-    for(let i = startCellIndex.row;i<=endCellIndex.row;i++){
-      data.push(handleCellVaue(worksheet.getCell(i,startCellIndex.column).value))
+  } else if (startCellIndex.column == endCellIndex.column) {
+    let data = []
+    for (let i = startCellIndex.row; i <= endCellIndex.row; i++) {
+      data.push(handleCellVaue(worksheet.getCell(i, startCellIndex.column).value))
     }
     return data
-  }else{
-    let data=[] as Array<Array<string>>
-    for(let row = 0; row<=endCellIndex.row-startCellIndex.row;row++){
-      data[row]=[]
-      for(let col = 0; col<=endCellIndex.column-startCellIndex.column;col++){
-        data[row][col] = handleCellVaue(worksheet.getCell(startCellIndex.row+row,startCellIndex.column+col).value)
+  } else {
+    let data = [] as Array<Array<string>>
+    for (let row = 0; row <= endCellIndex.row - startCellIndex.row; row++) {
+      data[row] = []
+      for (let col = 0; col <= endCellIndex.column - startCellIndex.column; col++) {
+        data[row][col] = handleCellVaue(worksheet.getCell(startCellIndex.row + row, startCellIndex.column + col).value)
       }
     }
     return data
@@ -151,6 +161,7 @@ const onChooseFile = (uploadFile: UploadFile, uploadFiles: UploadFiles) => {
   // console.log("size:", uploadFile.size)
   // console.log("url:", uploadFile.raw)
   const workbook = new exceljs.Workbook()
+  formValues.selectFileName = uploadFile.name
   uploadFile.raw?.arrayBuffer().then((val) => {
     return workbook.xlsx.load(val)
   }).then((book) => {
@@ -188,7 +199,6 @@ const getTableData = (worksheet: exceljs.Worksheet) => {
   for (let i = 1; i <= worksheet.rowCount; i++) {
     rows[i] = []
     worksheet.getRow(i).eachCell((cell, colNumber) => {
-
       rows[i][colNumber] = handleCellVaue(cell.value)
     })
 
