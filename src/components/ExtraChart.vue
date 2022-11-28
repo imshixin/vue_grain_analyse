@@ -20,7 +20,7 @@ const prop = defineProps<{
 }>()
 const chartName = "extra-chart" + prop.index
 const extraChart = ref()
-const showSymbol = ref(false)
+const showSymbol = ref(true)
 const currentTab = inject('currentTab') as Ref<string>
 interface Dimension {
   width: number,

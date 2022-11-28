@@ -7,7 +7,7 @@
       </template>
     </el-upload>
     <div class="tableContainer">
-      <el-form label-width="180px">
+      <el-form label-width="150px">
         <el-form-item label="选择文件">
           <el-upload :on-change="onChooseFile" :auto-upload="false">
             <el-button>选择文件</el-button>
@@ -24,7 +24,7 @@
             <el-input v-model="formValues.sizeStartCell" />
           </el-col>
           <el-col :span="2">
-            <span class="text-gray-500">-</span>
+            <div class="text-gray-500" style="text-align: center;">-</div>
           </el-col>
           <el-col :span="11">
             <el-input v-model="formValues.sizeEndCell" />
@@ -35,7 +35,7 @@
             <el-input v-model="formValues.groupStartCell" />
           </el-col>
           <el-col :span="2">
-            <span class="text-gray-500">-</span>
+            <div class="text-gray-500" style="text-align: center;">-</div>
           </el-col>
           <el-col :span="11">
             <el-input v-model="formValues.groupEndCell" />
@@ -46,7 +46,7 @@
             <el-input v-model="formValues.dataStartCell" />
           </el-col>
           <el-col :span="2">
-            <span class="text-gray-500">-</span>
+            <div class="text-gray-500" style="text-align: center;">-</div>
           </el-col>
           <el-col :span="11">
             <el-input v-model="formValues.dataEndCell" />
@@ -79,7 +79,7 @@ const selectDefaultValue = ref("")
 const rows = ref<Array<Array<string>>>([])
 const formValues = reactive({
   selectWorksheet: "Sheet7",
-  selectFileName:'',
+  selectFileName: '',
   sizeStartCell: "A2",
   sizeEndCell: "A100",
   groupStartCell: "B1",
@@ -107,13 +107,13 @@ const emit = defineEmits(['importNewData'])
 const onSubmit = () => {
   const groupNames = getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0], formValues.groupStartCell, formValues.groupEndCell) as string[]
   const sizes = (getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0]
-    , formValues.sizeStartCell, formValues.sizeEndCell) as string[]).map(v=>Number(v))
+    , formValues.sizeStartCell, formValues.sizeEndCell) as string[]).map(v => Number(v))
   const datas = (getCellValues(worksheets.value.filter(v => v.name == formValues.selectWorksheet)[0]
     , formValues.dataStartCell, formValues.dataEndCell) as string[][]).map(v => {
       return v.map(va => Number(va))
     })
   emit('importNewData', {
-    fileName:formValues.selectFileName,
+    fileName: formValues.selectFileName,
     groupNames,
     sizes,
     datas

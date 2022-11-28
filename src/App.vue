@@ -7,7 +7,7 @@
                 <el-button type="primary" size="large" plain><iconfont icon="#icon-tianjia" size="18"/><span>增加数据</span></el-button>
             </el-menu-item>
             <el-menu-item index="2"><iconfont icon="#icon-qiehuanyuyan" size="26"/> 选择语言</el-menu-item>
-            <el-dialog v-model="isShowDialog">
+            <el-dialog class="file-chooser-dialog" v-model="isShowDialog">
                 <file-chooser @import-new-data="onImportNewData"/>
             </el-dialog>
         </el-menu>
@@ -57,10 +57,12 @@ li.el-menu-item,
 li.el-menu-item.is-active {
     border-bottom: none !important;
     user-select: none;
-    background-color: rgb(255, 255, 255) ;
+    background-color: rgb(255, 255, 255);
 }
 
-
+::v-deep(.el-dialog){
+    --el-dialog-width: 410px;
+}
 .main-tabs {
     height: calc(100vh - 57px);
 }
